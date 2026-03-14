@@ -1,0 +1,28 @@
+name,ticket_number
+"Ariana Cole","6980"
+"Marcus Tan","6980"
+"Ariana Cole","6055"
+"Marcus Tan","6055"
+"David Lee","6055"
+"Jordan Wu","Ticket #1336"
+"Ariana Cole","Ticket #7634"
+"Marcus Tan","Ticket #1163"
+"Siti Nurhaliza","Ticket #4560"
+"David Lee","Ticket #6953"
+"Jordan Wu","Ticket #6548"
+"Ariana Cole","Ticket #2903"
+"Marcus Tan","Ticket #7261"
+"Siti Nurhaliza","Ticket #8253"
+"David Lee","Ticket #4563"
+"Jordan Wu","Ticket #5755"
+"Ariana Cole","Ticket #9183"
+"Marcus Tan","Ticket #1690"
+"Siti Nurhaliza","Ticket #5189"
+"David Lee","Ticket #7129"
+Jordan Wu,Resolved,2026-03-13T12:37:26.462Z
+Jordan Wu,Resolved,2026-03-13T12:41:14.577Z
+Jordan Wu,Resolved,2026-03-13T12:46:18.265Z
+Ariana Cole,Investigating,2026-03-13T12:46:27.425Z
+Marcus Tan,Pending Customer,2026-03-13T12:46:36.946Z
+Siti Nurhaliza,Investigating,2026-03-13T12:47:28.374Z
+David Lee,Resolved,2026-03-13T12:48:38.945Z

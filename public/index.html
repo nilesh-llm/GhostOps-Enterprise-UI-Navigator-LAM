@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GhostOps | Mission Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-900 text-slate-100 min-h-screen p-8 font-sans">
+    <div class="mx-auto max-w-7xl">
+      <header class="mb-8 border-b border-slate-800 pb-6">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-semibold tracking-tight">GhostOps | Mission Control</h1>
+            <p class="mt-2 text-sm text-slate-400">
+              Real-time agent telemetry, voice mission dispatch, and Gemini vision streaming.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="ws-dot" class="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+            <span id="ws-status" class="text-xs text-slate-400">WS: disconnected</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <section class="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl shadow-black/30">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-300">
+              Controls
+            </h2>
+            <span
+              id="run-status"
+              class="rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs text-slate-300"
+            >
+              Idle
+            </span>
+          </div>
+
+          <div class="mt-6 space-y-4">
+            <button
+              id="voice-button"
+              type="button"
+              class="w-full bg-blue-600 hover:bg-blue-500 text-white rounded-lg py-4 font-bold transition"
+            >
+              Hold to Speak
+            </button>
+
+            <div class="space-y-2">
+              <label for="command-input" class="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Text Input Fallback
+              </label>
+              <textarea
+                id="command-input"
+                rows="4"
+                class="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none focus:border-blue-500"
+                placeholder="Describe the mission for GhostOps..."
+              ></textarea>
+            </div>
+
+            <div class="flex gap-3">
+              <button
+                id="send-command"
+                type="button"
+                class="rounded-lg bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white"
+              >
+                Send Mission
+              </button>
+              <button
+                id="clear-log"
+                type="button"
+                class="rounded-lg border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+              >
+                Clear Log
+              </button>
+            </div>
+
+            <div class="rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+              <p id="voice-status" class="text-sm text-slate-300">Status: Waiting for voice...</p>
+              <p id="goal-echo" class="mt-2 text-sm text-blue-300 break-words"></p>
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <h3 class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-300">
+              Agentic Thought Log
+            </h3>
+            <div
+              id="thought-log"
+              class="mt-4 bg-black text-green-400 font-mono p-4 rounded-lg h-96 overflow-y-auto text-sm"
+            >
+              <div>Waiting for WebSocket stream...</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-2xl shadow-black/30">
+          <h2 class="text-sm font-semibold uppercase tracking-[0.24em] text-slate-300">
+            Gemini Spatial Vision Feed
+          </h2>
+
+          <div
+            id="vision-placeholder"
+            class="mt-6 bg-slate-800 border-2 border-dashed border-slate-600 h-[600px] flex items-center justify-center text-slate-500 rounded-lg"
+          >
+            Awaiting Vision Feed...
+          </div>
+
+          <img
+            id="vision-feed"
+            alt="Gemini spatial vision feed"
+            class="hidden w-full h-auto rounded-lg shadow-2xl mt-6"
+          />
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const voiceButton = document.getElementById("voice-button");
+        const commandInput = document.getElementById("command-input");
+        const sendCommandButton = document.getElementById("send-command");
+        const clearLogButton = document.getElementById("clear-log");
+        const voiceStatus = document.getElementById("voice-status");
+        const goalEcho = document.getElementById("goal-echo");
+        const thoughtLog = document.getElementById("thought-log");
+        const visionPlaceholder = document.getElementById("vision-placeholder");
+        const visionFeed = document.getElementById("vision-feed");
+        const wsDot = document.getElementById("ws-dot");
+        const wsStatus = document.getElementById("ws-status");
+        const runStatus = document.getElementById("run-status");
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        let recognition = null;
+        let isListening = false;
+        let finalTranscript = "";
+        let shouldSendTranscript = false;
+
+        function addLogLine(text) {
+          const line = document.createElement("div");
+          line.textContent = text;
+          thoughtLog.appendChild(line);
+          thoughtLog.scrollTop = thoughtLog.scrollHeight;
+        }
+
+        function setRunState(state) {
+          runStatus.textContent = state;
+          runStatus.className =
+            "rounded-full border px-3 py-1 text-xs " +
+            (state === "Running"
+              ? "border-blue-500/50 bg-blue-500/10 text-blue-200"
+              : "border-slate-700 bg-slate-800 text-slate-300");
+        }
+
+        function setVoiceButtonState(listening) {
+          isListening = listening;
+          voiceButton.textContent = listening ? "Stop & Send" : "Hold to Speak";
+          voiceButton.className =
+            "w-full text-white rounded-lg py-4 font-bold transition " +
+            (listening ? "bg-rose-600 hover:bg-rose-500" : "bg-blue-600 hover:bg-blue-500");
+        }
+
+        async function sendCommand(command) {
+          if (!command || typeof command !== "string" || !command.trim()) return;
+
+          const clean = command.trim();
+          commandInput.value = clean;
+          goalEcho.textContent = clean;
+          voiceStatus.textContent = `You said: ${clean}`;
+          setRunState("Running");
+          addLogLine(`> Mission: ${clean}`);
+
+          try {
+            const res = await fetch("/api/command", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ command: clean }),
+            });
+
+            const data = await res.json();
+            addLogLine(`[HTTP ${res.status}] ${data && data.message ? data.message : "Response received."}`);
+            voiceStatus.textContent =
+              data && data.success
+                ? `You said: ${clean}`
+                : `Status: ${data && data.message ? data.message : "Mission request failed."}`;
+          } catch (error) {
+            addLogLine("❌ Failed to contact GhostOps server.");
+            voiceStatus.textContent = "Status: Failed to contact GhostOps server.";
+          } finally {
+            setRunState("Idle");
+          }
+        }
+
+        function updateTranscriptDisplay(interimTranscript) {
+          const transcript = `${finalTranscript}${interimTranscript || ""}`.trim();
+          commandInput.value = transcript;
+          goalEcho.textContent = transcript;
+          voiceStatus.textContent = transcript
+            ? `Transcript: ${transcript}`
+            : isListening
+            ? "Status: Listening..."
+            : "Status: Waiting for voice...";
+        }
+
+        function toggleVoiceRecognition() {
+          if (!SpeechRecognition) {
+            alert("Speech recognition is not supported in this browser.");
+            return;
+          }
+
+          if (!recognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+              setVoiceButtonState(true);
+              voiceStatus.textContent = "Status: Listening...";
+              addLogLine("🎙️ Listening for voice command...");
+            };
+
+            recognition.onresult = (event) => {
+              let interimTranscript = "";
+
+              for (let i = event.resultIndex; i < event.results.length; i += 1) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                  finalTranscript += transcript;
+                } else {
+                  interimTranscript += transcript;
+                }
+              }
+
+              updateTranscriptDisplay(interimTranscript);
+            };
+
+            recognition.onerror = (event) => {
+              shouldSendTranscript = false;
+              setVoiceButtonState(false);
+              voiceStatus.textContent = "Status: Voice capture failed.";
+              addLogLine(`❌ Voice recognition error: ${event.error}`);
+            };
+
+            recognition.onend = () => {
+              setVoiceButtonState(false);
+              const transcriptToSend = finalTranscript.trim();
+
+              if (shouldSendTranscript) {
+                shouldSendTranscript = false;
+                if (transcriptToSend) {
+                  addLogLine(`🎤 Heard: ${transcriptToSend}`);
+                  sendCommand(transcriptToSend);
+                } else {
+                  voiceStatus.textContent = "Status: No voice transcript captured.";
+                }
+                finalTranscript = "";
+                return;
+              }
+
+              if (!transcriptToSend) {
+                voiceStatus.textContent = "Status: Waiting for voice...";
+              }
+            };
+          }
+
+          if (isListening) {
+            shouldSendTranscript = true;
+            recognition.stop();
+            return;
+          }
+
+          finalTranscript = "";
+          shouldSendTranscript = false;
+          commandInput.value = "";
+          goalEcho.textContent = "";
+
+          try {
+            recognition.start();
+          } catch (error) {
+            finalTranscript = "";
+            shouldSendTranscript = false;
+            setVoiceButtonState(false);
+            voiceStatus.textContent = "Status: Waiting for voice...";
+          }
+        }
+
+        function connectWs() {
+          const ws = new WebSocket("ws://" + window.location.host);
+
+          ws.onopen = function () {
+            wsDot.classList.remove("bg-rose-500");
+            wsDot.classList.add("bg-emerald-400");
+            wsStatus.textContent = "WS: connected";
+            addLogLine("✅ WebSocket connected. Streaming enabled.");
+          };
+
+          ws.onclose = function () {
+            wsDot.classList.remove("bg-emerald-400");
+            wsDot.classList.add("bg-rose-500");
+            wsStatus.textContent = "WS: disconnected (retrying...)";
+            addLogLine("⚠️ WebSocket disconnected. Retrying...");
+            setTimeout(connectWs, 1200);
+          };
+
+          ws.onmessage = function (event) {
+            let message;
+            try {
+              message = JSON.parse(event.data);
+            } catch {
+              return;
+            }
+
+            if (message.type === "log" && message.data) {
+              addLogLine(message.data);
+              return;
+            }
+
+            if (message.type === "image" && message.data) {
+              visionPlaceholder.classList.add("hidden");
+              visionFeed.classList.remove("hidden");
+              visionFeed.src = "data:image/png;base64," + message.data;
+            }
+          };
+        }
+
+        thoughtLog.innerHTML = "";
+        addLogLine("Waiting for WebSocket stream...");
+        setRunState("Idle");
+        setVoiceButtonState(false);
+        connectWs();
+
+        voiceButton.addEventListener("click", toggleVoiceRecognition);
+        sendCommandButton.addEventListener("click", function () {
+          sendCommand(commandInput.value);
+        });
+        clearLogButton.addEventListener("click", function () {
+          thoughtLog.innerHTML = "";
+        });
+        commandInput.addEventListener("keydown", function (event) {
+          if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+            sendCommand(commandInput.value);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

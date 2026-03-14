@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BankCorp AS400 Web Emulator v2.1</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #e0e0e0;
+        font-family: "Times New Roman", Arial, serif;
+      }
+
+      .wrapper {
+        width: 100%;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 20px;
+      }
+
+      table {
+        border-collapse: collapse;
+        border: 2px solid #999999;
+        background-color: #f5f5f5;
+      }
+
+      th,
+      td {
+        border: 1px solid #999999;
+        padding: 6px 10px;
+        font-size: 13px;
+      }
+
+      .header-row {
+        background-color: #cccccc;
+        font-weight: bold;
+        font-size: 16px;
+        text-align: left;
+      }
+
+      .label-cell {
+        width: 160px;
+        background-color: #dddddd;
+      }
+
+      input[type="text"],
+      select {
+        width: 260px;
+        font-family: "Times New Roman", Arial, serif;
+        font-size: 13px;
+        padding: 2px 4px;
+        border: 1px solid #666666;
+        background-color: #ffffff;
+      }
+
+      .button-row {
+        background-color: #dddddd;
+        text-align: center;
+      }
+
+      .save-button {
+        margin-top: 8px;
+        padding: 8px 18px;
+        font-family: Arial, "Times New Roman", serif;
+        font-size: 13px;
+        font-weight: bold;
+        background-color: #d0d0d0;
+        border: 2px solid #555555;
+        cursor: pointer;
+      }
+
+      .save-button:hover {
+        background-color: #c0c0c0;
+      }
+
+      #statusMessage {
+        font-size: 12px;
+        font-weight: bold;
+        color: green;
+        padding-top: 4px;
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <table>
+        <tr class="header-row">
+          <th colspan="2">BankCorp AS400 Web Emulator v2.1</th>
+        </tr>
+        <tr>
+          <td class="label-cell">Customer Name</td>
+          <td>Nilesh K.</td>
+        </tr>
+        <tr>
+          <td class="label-cell">Customer ID</td>
+          <td>BK-102938</td>
+        </tr>
+        <tr>
+          <td class="label-cell">Phone Number</td>
+          <td>
+            <input type="text" id="phoneNumber" value="+91 98765 43210" />
+          </td>
+        </tr>
+        <tr>
+          <td class="label-cell">Home Address</td>
+          <td>
+            <input
+              type="text"
+              id="homeAddress"
+              value="502, Green Meadows, Pune"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td class="label-cell">Account Status</td>
+          <td>
+            <select id="accountStatus">
+              <option value="Active" selected>Active</option>
+              <option value="Frozen">Frozen</option>
+            </select>
+          </td>
+        </tr>
+        <tr class="button-row">
+          <td colspan="2">
+            <button class="save-button" id="saveButton">SAVE CHANGES</button>
+            <div id="statusMessage">RECORD UPDATED SUCCESSFULLY.</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <script>
+      (function () {
+        var button = document.getElementById("saveButton");
+        var statusMessage = document.getElementById("statusMessage");
+
+        button.onclick = function () {
+          statusMessage.style.visibility = "visible";
+        };
+      })();
+    </script>
+  </body>
+  </html>
+
