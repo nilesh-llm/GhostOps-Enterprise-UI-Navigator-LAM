@@ -5,7 +5,7 @@
 ![Google Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-8E75B2?style=for-the-badge&logo=googlebard&logoColor=white)
 ![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
 
-**GhostOps** is a Large Action Model (LAM) built for the **Google Gemini Live Agent Challenge (UI Navigator Track)**. 
+**GhostOps** is a Large Action Model (LAM). 
 
 It solves the enterprise "Swivel-Chair" bottleneck by giving AI "Eyes and Hands." Instead of relying on brittle HTML DOM scraping or waiting months for IT to build APIs, GhostOps uses spatial vision to look at legacy software screens, find the exact pixel coordinates of buttons, and autonomously click, type, and navigate on behalf of a human operator.
 
